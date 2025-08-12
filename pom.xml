@@ -9,6 +9,9 @@
     <description>
         基于 xxl-job 的分布式任务调度系统
     </description>
+    <modules>
+        <module>xxl-job-plus-core</module>
+    </modules>
 
     <properties>
         <!-- env -->
@@ -26,6 +29,7 @@
         <slf4j-api.version>2.0.17</slf4j-api.version>
         <junit-jupiter.version>5.13.4</junit-jupiter.version>
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
+        <lombok.version>1.18.38</lombok.version>
         <!-- net -->
         <netty.version>4.1.123.Final</netty.version>
         <gson.version>2.13.1</gson.version>
