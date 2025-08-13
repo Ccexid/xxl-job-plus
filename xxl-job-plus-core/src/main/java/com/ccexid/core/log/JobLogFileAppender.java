@@ -1,5 +1,6 @@
 package com.ccexid.core.log;
 
+import com.ccexid.core.model.LogResult;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
@@ -168,5 +169,45 @@ public class JobLogFileAppender {
             log.error("读取日志文件内存溢出: {}", logFile.getAbsolutePath(), e);
         }
         return null;
+    }
+
+    /**
+     * 从指定行号开始读取日志文件内容
+     *
+     * @param logFileName 日志文件名
+     * @param fromLineNum 起始行号（从1开始）
+     * @return 日志结果对象，包含读取的行号范围和日志内容
+     */
+    public static LogResult readLog(String logFileName, int fromLineNum) {
+        if (logFileName == null || logFileName.trim().isEmpty()) {
+            return new LogResult(fromLineNum, 0, "readLog fail, logFile not found", true);
+        }
+        File logFile = new File(logFileName);
+
+        if (!logFile.exists()) {
+            return new LogResult(fromLineNum, 0, "readLog fail, logFile not exists", true);
+        }
+
+        // read file
+        StringBuilder logContentBuffer = new StringBuilder();
+        int toLineNum = 0;
+        
+        try (LineNumberReader reader = new LineNumberReader(
+                new InputStreamReader(Files.newInputStream(logFile.toPath()), StandardCharsets.UTF_8))) {
+            
+            String line;
+            while ((line = reader.readLine()) != null) {
+                toLineNum = reader.getLineNumber(); // [from, to], start as 1
+                if (toLineNum >= fromLineNum) {
+                    logContentBuffer.append(line).append("\n");
+                }
+            }
+        } catch (IOException e) {
+            log.error("读取日志文件异常: {}", logFile.getAbsolutePath(), e);
+            return new LogResult(fromLineNum, 0, "readLog fail, IOException", true);
+        }
+
+        // result
+        return new LogResult(fromLineNum, toLineNum, logContentBuffer.toString(), true);
     }
 }
