@@ -1,4 +1,4 @@
-package com.ccexid.core.biz.model;
+package com.ccexid.core.service.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

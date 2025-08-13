@@ -1,7 +1,7 @@
 package com.ccexid.core.log;
 
 
-import com.ccexid.core.biz.model.LogResult;
+import com.ccexid.core.service.model.LogResult;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

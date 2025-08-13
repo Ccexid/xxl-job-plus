@@ -1,6 +1,6 @@
 package com.ccexid.core.handler;
 
-import com.ccexid.core.biz.model.ApiResponse;
+import com.ccexid.core.service.model.ApiResponse;
 
 /**
  * job handler
