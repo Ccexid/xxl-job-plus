@@ -1,6 +1,6 @@
 package com.ccexid.core.server;
 
-import com.ccexid.core.service.ExecutorService;
+import com.ccexid.core.service.ExecutorBiz;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -23,11 +23,11 @@ public class NettyServerBootstrapper {
     private static final int IDLE_TIMEOUT_SECONDS = 90;
     private static final int HTTP_AGGREGATOR_MAX_SIZE = 5 * 1024 * 1024;
 
-    private final ExecutorService executorService;
+    private final ExecutorBiz executorBiz;
     private final ThreadPoolExecutor bizThreadPool;
 
-    public NettyServerBootstrapper(ExecutorService executorBiz, ThreadPoolExecutor bizThreadPool) {
-        this.executorService = executorBiz;
+    public NettyServerBootstrapper(ExecutorBiz executorBiz, ThreadPoolExecutor bizThreadPool) {
+        this.executorBiz = executorBiz;
         this.bizThreadPool = bizThreadPool;
     }
 
@@ -56,7 +56,7 @@ public class NettyServerBootstrapper {
                         .addLast(new IdleStateHandler(0, 0, IDLE_TIMEOUT_SECONDS, TimeUnit.SECONDS))
                         .addLast(new HttpServerCodec())
                         .addLast(new HttpObjectAggregator(HTTP_AGGREGATOR_MAX_SIZE))
-                        .addLast(new EmbeddedHttpServerHandler(executorService, accessToken, bizThreadPool));
+                        .addLast(new EmbeddedHttpServerHandler(executorBiz, accessToken, bizThreadPool));
             }
         };
     }

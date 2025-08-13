@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * 管理服务接口，提供回调、注册和注销等管理功能
  */
-public interface AdminService {
+public interface AdminBiz {
 
     /**
      * 处理回调请求

@@ -1,7 +1,7 @@
 package com.ccexid.core.server;
 
 import com.ccexid.core.enums.ResultCode;
-import com.ccexid.core.service.ExecutorService;
+import com.ccexid.core.service.ExecutorBiz;
 import com.ccexid.core.service.model.*;
 import com.ccexid.core.utils.GsonUtils;
 import com.ccexid.core.utils.ThrowableUtils;
@@ -24,12 +24,12 @@ public class EmbeddedHttpServerHandler extends SimpleChannelInboundHandler<FullH
     private static final Logger logger = LoggerFactory.getLogger(EmbeddedHttpServerHandler.class);
     private static final String CONTENT_TYPE_JSON = "application/json;charset=UTF-8";
 
-    private final ExecutorService executorService;
+    private final ExecutorBiz executorBiz;
     private final String accessToken;
     private final ThreadPoolExecutor businessThreadPool;
 
-    public EmbeddedHttpServerHandler(ExecutorService executorService, String accessToken, ThreadPoolExecutor businessThreadPool) {
-        this.executorService = executorService;
+    public EmbeddedHttpServerHandler(ExecutorBiz executorBiz, String accessToken, ThreadPoolExecutor businessThreadPool) {
+        this.executorBiz = executorBiz;
         this.accessToken = accessToken;
         this.businessThreadPool = businessThreadPool;
     }
@@ -89,7 +89,7 @@ public class EmbeddedHttpServerHandler extends SimpleChannelInboundHandler<FullH
     private Object handleBusiness(RequestParam params) {
         switch (params.getUri()) {
             case "/beat":
-                return executorService.beat();
+                return executorBiz.beat();
             case "/idleBeat":
                 return handleIdleBeat(params.getRequestData());
             case "/run":
@@ -105,22 +105,22 @@ public class EmbeddedHttpServerHandler extends SimpleChannelInboundHandler<FullH
 
     private Object handleIdleBeat(String requestData) {
         IdleBeatParam param = GsonUtils.fromJson(requestData, IdleBeatParam.class);
-        return executorService.idleBeat(param);
+        return executorBiz.idleBeat(param);
     }
 
     private Object handleRun(String requestData) {
         TriggerParam param = GsonUtils.fromJson(requestData, TriggerParam.class);
-        return executorService.run(param);
+        return executorBiz.run(param);
     }
 
     private Object handleKill(String requestData) {
         KillParam param = GsonUtils.fromJson(requestData, KillParam.class);
-        return executorService.kill(param);
+        return executorBiz.kill(param);
     }
 
     private Object handleLog(String requestData) {
         LogParam param = GsonUtils.fromJson(requestData, LogParam.class);
-        return executorService.log(param);
+        return executorBiz.log(param);
     }
 
     /**

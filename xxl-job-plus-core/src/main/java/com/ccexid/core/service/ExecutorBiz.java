@@ -6,7 +6,7 @@ import com.ccexid.core.service.model.*;
  * ExecutorService接口定义了执行器服务的核心功能方法
  * 该接口提供了任务执行、状态检查、任务终止和日志查询等操作
  */
-public interface ExecutorService {
+public interface ExecutorBiz {
 
     /**
      * 执行心跳检测，用于检查执行器是否存活

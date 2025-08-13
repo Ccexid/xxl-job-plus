@@ -1,7 +1,7 @@
 package com.ccexid.core.server;
 
-import com.ccexid.core.service.ExecutorService;
-import com.ccexid.core.service.impl.ExecutorServiceImpl;
+import com.ccexid.core.service.ExecutorBiz;
+import com.ccexid.core.service.impl.ExecutorBizImpl;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -23,9 +23,9 @@ public class EmbedServer {
     private Thread serverThread;
 
     public EmbedServer() {
-        ExecutorService executorService = new ExecutorServiceImpl();
+        ExecutorBiz executorBiz = new ExecutorBizImpl();
         this.bizThreadPool = BizThreadPoolFactory.create();
-        this.nettyBootstrapper = new NettyServerBootstrapper(executorService, bizThreadPool);
+        this.nettyBootstrapper = new NettyServerBootstrapper(executorBiz, bizThreadPool);
         this.registrationManager = new RegistrationManager();
     }
 

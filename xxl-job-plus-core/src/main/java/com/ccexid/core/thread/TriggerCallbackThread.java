@@ -6,7 +6,7 @@ import com.ccexid.core.context.XxlJobHelper;
 import com.ccexid.core.enums.ResultCode;
 import com.ccexid.core.executor.XxlJobExecutor;
 import com.ccexid.core.log.XxlJobFileAppender;
-import com.ccexid.core.service.AdminService;
+import com.ccexid.core.service.AdminBiz;
 import com.ccexid.core.service.model.ApiResponse;
 import com.ccexid.core.service.model.HandleCallbackParam;
 import com.ccexid.core.utils.FileUtils;
@@ -178,7 +178,7 @@ public class TriggerCallbackThread {
      */
     private void processCallbacks(List<HandleCallbackParam> callbackList) {
         boolean isSuccess = XxlJobExecutor.getAdminClients().stream()
-                .anyMatch(adminService -> attemptCallback(adminService, callbackList));
+                .anyMatch(adminBiz -> attemptCallback(adminBiz, callbackList));
 
         if (!isSuccess) {
             saveFailedCallbacks(callbackList);
@@ -188,9 +188,9 @@ public class TriggerCallbackThread {
     /**
      * 尝试向单个管理员服务发送回调
      */
-    private boolean attemptCallback(AdminService adminService, List<HandleCallbackParam> callbackList) {
+    private boolean attemptCallback(AdminBiz adminBiz, List<HandleCallbackParam> callbackList) {
         try {
-            ApiResponse<?> result = adminService.callback(callbackList);
+            ApiResponse<?> result = adminBiz.callback(callbackList);
             if (result != null && ResultCode.SUCCESS.getCode() == result.getCode()) {
                 logCallbackResult(callbackList, "<br>----------- xxl-job 任务回调完成");
                 return true;

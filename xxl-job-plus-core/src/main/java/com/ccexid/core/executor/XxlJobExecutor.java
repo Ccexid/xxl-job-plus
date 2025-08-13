@@ -4,7 +4,7 @@ import com.ccexid.core.handler.IJobHandler;
 import com.ccexid.core.handler.annotation.XxlJob;
 import com.ccexid.core.log.XxlJobFileAppender;
 import com.ccexid.core.server.EmbedServer;
-import com.ccexid.core.service.AdminService;
+import com.ccexid.core.service.AdminBiz;
 import com.ccexid.core.service.client.AdminBizClient;
 import com.ccexid.core.thread.JobLogFileCleanThread;
 import com.ccexid.core.thread.JobThread;
@@ -47,7 +47,7 @@ public class XxlJobExecutor {
     private int logRetentionDays;         // 日志保留天数
 
     // ---------------------- 组件实例 ----------------------
-    private static List<AdminService> adminClients;  // 调度中心客户端列表
+    private static List<AdminBiz> adminClients;  // 调度中心客户端列表
     private EmbedServer embeddedServer;          // 嵌入式服务器
     private static final ConcurrentMap<String, IJobHandler> JOB_HANDLER_REGISTRY = new ConcurrentHashMap<>();  // 任务处理器注册表
     private static final ConcurrentMap<Integer, JobThread> JOB_THREAD_REGISTRY = new ConcurrentHashMap<>();   // 任务线程注册表
@@ -108,12 +108,12 @@ public class XxlJobExecutor {
                 .filter(addresses -> !addresses.trim().isEmpty())
                 .map(addresses -> Stream.of(addresses.trim().split(","))
                         .filter(addr -> addr != null && !addr.trim().isEmpty())
-                        .map(addr -> (AdminService) new AdminBizClient(addr.trim(), accessToken, timeout))
+                        .map(addr -> (AdminBiz) new AdminBizClient(addr.trim(), accessToken, timeout))
                         .collect(Collectors.toList()))
                 .orElse(new ArrayList<>());
     }
 
-    public static List<AdminService> getAdminClients() {
+    public static List<AdminBiz> getAdminClients() {
         return adminClients;
     }
 

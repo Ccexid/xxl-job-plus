@@ -1,12 +1,12 @@
 package com.ccexid.core.service.impl;
 
 
-import com.ccexid.core.service.ExecutorService;
+import com.ccexid.core.service.ExecutorBiz;
 import com.ccexid.core.service.model.*;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class ExecutorServiceImpl implements ExecutorService {
+public class ExecutorBizImpl implements ExecutorBiz {
     /**
      * 执行心跳检测，用于检查执行器是否存活
      *

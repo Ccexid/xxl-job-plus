@@ -1,6 +1,6 @@
 package com.ccexid.core.service.client;
 
-import com.ccexid.core.service.AdminService;
+import com.ccexid.core.service.AdminBiz;
 import com.ccexid.core.service.model.ApiResponse;
 import com.ccexid.core.service.model.HandleCallbackParam;
 import com.ccexid.core.service.model.RegistryParam;
@@ -15,7 +15,7 @@ import java.util.List;
  * @author xuxueli 2017-07-28 22:14:52
  */
 @Data
-public class AdminBizClient implements AdminService {
+public class AdminBizClient implements AdminBiz {
 
     public AdminBizClient() {
     }

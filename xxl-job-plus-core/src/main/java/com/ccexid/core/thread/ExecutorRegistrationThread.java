@@ -4,7 +4,7 @@ import com.ccexid.core.constant.RegisterConstant;
 import com.ccexid.core.enums.RegisterTypeEnum;
 import com.ccexid.core.enums.ResultCode;
 import com.ccexid.core.executor.XxlJobExecutor;
-import com.ccexid.core.service.AdminService;
+import com.ccexid.core.service.AdminBiz;
 import com.ccexid.core.service.model.ApiResponse;
 import com.ccexid.core.service.model.RegistryParam;
 import lombok.Setter;
@@ -37,7 +37,7 @@ public class ExecutorRegistrationThread {
      *  设置调度中心客户端列表（用于解耦，便于测试）
      */
     @Setter
-    private List<AdminService> adminBizList;  // 调度中心客户端列表（通过注入解耦）
+    private List<AdminBiz> adminBizList;  // 调度中心客户端列表（通过注入解耦）
 
     /**
      * 启动注册线程
