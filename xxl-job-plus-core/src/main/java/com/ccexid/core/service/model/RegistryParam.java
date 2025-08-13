@@ -1,6 +1,8 @@
 package com.ccexid.core.service.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
@@ -10,6 +12,8 @@ import java.io.Serializable;
  * 实现了Serializable接口，支持序列化操作
  */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class RegistryParam implements Serializable {
     private static final long serialVersionUID = 42L;
 
