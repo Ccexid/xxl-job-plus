@@ -64,5 +64,10 @@
             <artifactId>spring-boot-starter-logging</artifactId>
             <version>${spring-boot.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>transmittable-thread-local</artifactId> <!-- 解决 ThreadLocal 父子线程的传值问题 -->
+            <version>${transmittable-thread-local.version}</version>
+        </dependency>
     </dependencies>
 </project>
