@@ -14,6 +14,7 @@ import io.netty.handler.timeout.IdleStateHandler;
 
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 
 /**
  * Netty服务器引导类
@@ -25,10 +26,21 @@ public class NettyServerBootstrapper {
 
     private final ExecutorBiz executorBiz;
     private final ThreadPoolExecutor bizThreadPool;
+    private BiFunction<ExecutorBiz, String, EmbeddedHttpServerHandler> handlerFactory;
 
     public NettyServerBootstrapper(ExecutorBiz executorBiz, ThreadPoolExecutor bizThreadPool) {
         this.executorBiz = executorBiz;
         this.bizThreadPool = bizThreadPool;
+        // 默认处理器工厂
+        this.handlerFactory = (biz, accessToken) -> new EmbeddedHttpServerHandler(biz, accessToken, bizThreadPool);
+    }
+
+    /**
+     * 设置自定义处理器工厂
+     * @param handlerFactory 处理器工厂函数
+     */
+    public void setHandlerFactory(BiFunction<ExecutorBiz, String, EmbeddedHttpServerHandler> handlerFactory) {
+        this.handlerFactory = handlerFactory;
     }
 
     /**
@@ -56,8 +68,24 @@ public class NettyServerBootstrapper {
                         .addLast(new IdleStateHandler(0, 0, IDLE_TIMEOUT_SECONDS, TimeUnit.SECONDS))
                         .addLast(new HttpServerCodec())
                         .addLast(new HttpObjectAggregator(HTTP_AGGREGATOR_MAX_SIZE))
-                        .addLast(new EmbeddedHttpServerHandler(executorBiz, accessToken, bizThreadPool));
+                        .addLast(handlerFactory.apply(executorBiz, accessToken));
             }
         };
+    }
+
+    /**
+     * 获取业务线程池
+     * @return 业务线程池
+     */
+    public ThreadPoolExecutor getBizThreadPool() {
+        return bizThreadPool;
+    }
+
+    /**
+     * 获取执行器
+     * @return 执行器
+     */
+    public ExecutorBiz getExecutorBiz() {
+        return executorBiz;
     }
 }

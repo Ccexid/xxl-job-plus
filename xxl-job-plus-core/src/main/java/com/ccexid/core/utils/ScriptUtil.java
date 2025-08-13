@@ -7,8 +7,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  *  1、内嵌编译器如"PythonInterpreter"无法引用扩展包，因此推荐使用java调用控制台进程方式"Runtime.getRuntime().exec()"来运行脚本(shell或python)；
@@ -28,18 +30,12 @@ public class ScriptUtil {
      * @throws IOException
      */
     public static void markScriptFile(String scriptFileName, String content) throws IOException {
+        Objects.requireNonNull(scriptFileName, "脚本文件名不能为null");
+        Objects.requireNonNull(content, "脚本内容不能为null");
+
         // make file,   filePath/gluesource/666-123456789.py
-        FileOutputStream fileOutputStream = null;
-        try {
-            fileOutputStream = new FileOutputStream(scriptFileName);
-            fileOutputStream.write(content.getBytes("UTF-8"));
-            fileOutputStream.close();
-        } catch (Exception e) {
-            throw e;
-        }finally{
-            if(fileOutputStream != null){
-                fileOutputStream.close();
-            }
+        try (FileOutputStream fileOutputStream = new FileOutputStream(scriptFileName)) {
+            fileOutputStream.write(content.getBytes(StandardCharsets.UTF_8));
         }
     }
 
@@ -54,79 +50,62 @@ public class ScriptUtil {
      * @throws IOException
      */
     public static int execToFile(String command, String scriptFile, String logFile, String... params) throws IOException {
+        Objects.requireNonNull(command, "命令不能为null");
+        Objects.requireNonNull(scriptFile, "脚本文件不能为null");
+        Objects.requireNonNull(logFile, "日志文件不能为null");
 
-        FileOutputStream fileOutputStream = null;
-        Thread inputThread = null;
-        Thread errThread = null;
-        try {
-            // file
-            fileOutputStream = new FileOutputStream(logFile, true);
-
+        try (FileOutputStream fileOutputStream = new FileOutputStream(logFile, true)) {
             // command
             List<String> cmdarray = new ArrayList<>();
             cmdarray.add(command);
             cmdarray.add(scriptFile);
-            if (params!=null && params.length>0) {
-                for (String param:params) {
+            if (params != null && params.length > 0) {
+                for (String param : params) {
                     cmdarray.add(param);
                 }
             }
-            String[] cmdarrayFinal = cmdarray.toArray(new String[cmdarray.size()]);
+            String[] cmdarrayFinal = cmdarray.toArray(new String[0]);
 
             // process-exec
             final Process process = Runtime.getRuntime().exec(cmdarrayFinal);
 
             // log-thread
             final FileOutputStream finalFileOutputStream = fileOutputStream;
-            inputThread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        copy(process.getInputStream(), finalFileOutputStream, new byte[1024]);
-                    } catch (IOException e) {
-                        XxlJobHelper.log(e);
-                    }
+            Thread inputThread = new Thread(() -> {
+                try {
+                    copy(process.getInputStream(), finalFileOutputStream, new byte[1024]);
+                } catch (IOException e) {
+                    XxlJobHelper.log(e);
                 }
             });
-            errThread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        copy(process.getErrorStream(), finalFileOutputStream, new byte[1024]);
-                    } catch (IOException e) {
-                        XxlJobHelper.log(e);
-                    }
+            Thread errThread = new Thread(() -> {
+                try {
+                    copy(process.getErrorStream(), finalFileOutputStream, new byte[1024]);
+                } catch (IOException e) {
+                    XxlJobHelper.log(e);
                 }
             });
             inputThread.start();
             errThread.start();
 
             // process-wait
-            int exitValue = process.waitFor();      // exit code: 0=success, 1=error
+            int exitValue;
+            try {
+                exitValue = process.waitFor();      // exit code: 0=success, 1=error
 
-            // log-thread join
-            inputThread.join();
-            errThread.join();
+                // log-thread join
+                inputThread.join();
+                errThread.join();
+            } catch (InterruptedException e) {
+                XxlJobHelper.log(e);
+                Thread.currentThread().interrupt();
+                return -1;
+            }
 
             return exitValue;
         } catch (Exception e) {
             XxlJobHelper.log(e);
             return -1;
-        } finally {
-            if (fileOutputStream != null) {
-                try {
-                    fileOutputStream.close();
-                } catch (IOException e) {
-                    XxlJobHelper.log(e);
-                }
-
-            }
-            if (inputThread != null && inputThread.isAlive()) {
-                inputThread.interrupt();
-            }
-            if (errThread != null && errThread.isAlive()) {
-                errThread.interrupt();
-            }
         }
     }
 
@@ -140,9 +119,12 @@ public class ScriptUtil {
      * @throws IOException
      */
     private static long copy(InputStream inputStream, OutputStream outputStream, byte[] buffer) throws IOException {
+        Objects.requireNonNull(inputStream, "输入流不能为null");
+        Objects.requireNonNull(buffer, "缓冲区不能为null");
+
         try {
             long total = 0;
-            for (;;) {
+            for (; ; ) {
                 int res = inputStream.read(buffer);
                 if (res == -1) {
                     break;
@@ -154,76 +136,12 @@ public class ScriptUtil {
                     }
                 }
             }
-            outputStream.flush();
-            //out = null;
-            inputStream.close();
-            inputStream = null;
+            if (outputStream != null) {
+                outputStream.flush();
+            }
             return total;
         } finally {
-            if (inputStream != null) {
-                inputStream.close();
-            }
+            inputStream.close();
         }
     }
-
-    /**
-     * 脚本执行，日志文件实时输出
-     *
-     * 优点：支持将目标数据实时输出到指定日志文件中去
-     * 缺点：
-     *      标准输出和错误输出优先级固定，可能和脚本中顺序不一致
-     *      Java无法实时获取
-     *
-     *      <!-- commons-exec -->
-     * 		<dependency>
-     * 			<groupId>org.apache.commons</groupId>
-     * 			<artifactId>commons-exec</artifactId>
-     * 			<version>${commons-exec.version}</version>
-     * 		</dependency>
-     *
-     * @param command
-     * @param scriptFile
-     * @param logFile
-     * @param params
-     * @return
-     * @throws IOException
-     */
-    /*public static int execToFileB(String command, String scriptFile, String logFile, String... params) throws IOException {
-        // 标准输出：print （null if watchdog timeout）
-        // 错误输出：logging + 异常 （still exists if watchdog timeout）
-        // 标准输入
-
-        FileOutputStream fileOutputStream = null;   //
-        try {
-            fileOutputStream = new FileOutputStream(logFile, true);
-            PumpStreamHandler streamHandler = new PumpStreamHandler(fileOutputStream, fileOutputStream, null);
-
-            // command
-            CommandLine commandline = new CommandLine(command);
-            commandline.addArgument(scriptFile);
-            if (params!=null && params.length>0) {
-                commandline.addArguments(params);
-            }
-
-            // exec
-            DefaultExecutor exec = new DefaultExecutor();
-            exec.setExitValues(null);
-            exec.setStreamHandler(streamHandler);
-            int exitValue = exec.execute(commandline);  // exit code: 0=success, 1=error
-            return exitValue;
-        } catch (Exception e) {
-            XxlJobLogger.log(e);
-            return -1;
-        } finally {
-            if (fileOutputStream != null) {
-                try {
-                    fileOutputStream.close();
-                } catch (IOException e) {
-                    XxlJobLogger.log(e);
-                }
-
-            }
-        }
-    }*/
-
 }

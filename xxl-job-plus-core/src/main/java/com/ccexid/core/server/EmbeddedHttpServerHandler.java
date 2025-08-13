@@ -14,7 +14,10 @@ import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.Function;
 
 /**
  * HTTP请求处理器
@@ -27,11 +30,26 @@ public class EmbeddedHttpServerHandler extends SimpleChannelInboundHandler<FullH
     private final ExecutorBiz executorBiz;
     private final String accessToken;
     private final ThreadPoolExecutor businessThreadPool;
+    
+    // URI路由映射，提高可扩展性
+    private final Map<String, Function<String, Object>> uriHandlers = new ConcurrentHashMap<>();
 
     public EmbeddedHttpServerHandler(ExecutorBiz executorBiz, String accessToken, ThreadPoolExecutor businessThreadPool) {
         this.executorBiz = executorBiz;
         this.accessToken = accessToken;
         this.businessThreadPool = businessThreadPool;
+        initializeUriHandlers();
+    }
+
+    /**
+     * 初始化URI处理器映射
+     */
+    private void initializeUriHandlers() {
+        uriHandlers.put("/beat", this::handleBeat);
+        uriHandlers.put("/idleBeat", this::handleIdleBeat);
+        uriHandlers.put("/run", this::handleRun);
+        uriHandlers.put("/kill", this::handleKill);
+        uriHandlers.put("/log", this::handleLog);
     }
 
     @Override
@@ -87,20 +105,15 @@ public class EmbeddedHttpServerHandler extends SimpleChannelInboundHandler<FullH
      * 处理业务逻辑
      */
     private Object handleBusiness(RequestParam params) {
-        switch (params.getUri()) {
-            case "/beat":
-                return executorBiz.beat();
-            case "/idleBeat":
-                return handleIdleBeat(params.getRequestData());
-            case "/run":
-                return handleRun(params.getRequestData());
-            case "/kill":
-                return handleKill(params.getRequestData());
-            case "/log":
-                return handleLog(params.getRequestData());
-            default:
-                return ApiResponse.custom(ResultCode.RESOURCE_NOT_FOUND.getCode(), "未找到URI映射: " + params.getUri(), null);
+        Function<String, Object> handler = uriHandlers.get(params.getUri());
+        if (handler != null) {
+            return handler.apply(params.getRequestData());
         }
+        return ApiResponse.custom(ResultCode.RESOURCE_NOT_FOUND.getCode(), "未找到URI映射: " + params.getUri(), null);
+    }
+
+    private Object handleBeat(String requestData) {
+        return executorBiz.beat();
     }
 
     private Object handleIdleBeat(String requestData) {
@@ -151,6 +164,15 @@ public class EmbeddedHttpServerHandler extends SimpleChannelInboundHandler<FullH
         }
 
         params.getCtx().writeAndFlush(response);
+    }
+
+    /**
+     * 注册新的URI处理器，提高可扩展性
+     * @param uri URI路径
+     * @param handler 处理函数
+     */
+    public void registerUriHandler(String uri, Function<String, Object> handler) {
+        uriHandlers.put(uri, handler);
     }
 
     @Override

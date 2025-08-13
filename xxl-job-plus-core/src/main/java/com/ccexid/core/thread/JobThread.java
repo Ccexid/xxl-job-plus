@@ -18,6 +18,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * 任务执行线程
@@ -46,6 +48,10 @@ public class JobThread extends Thread {
     private String stopReason;
     private volatile boolean isRunning = false;
     private final AtomicInteger idleCount = new AtomicInteger(0);
+    
+    // 任务执行前后钩子函数，提高可扩展性
+    private Consumer<XxlJobContext> beforeExecuteHook = context -> {};
+    private BiConsumer<XxlJobContext, Throwable> afterExecuteHook = (context, throwable) -> {};
 
     // 构造函数（依赖注入，便于测试时替换）
     public JobThread(int jobId, IJobHandler jobHandler) {
@@ -61,7 +67,6 @@ public class JobThread extends Thread {
      * 向队列添加触发参数
      */
     public ApiResponse<Void> addTrigger(TriggerParam triggerParam) {
-        // 使用Optional处理可能的null参数
         return Optional.ofNullable(triggerParam)
                 .filter(param -> !triggerLogIds.contains(param.getLogId()))
                 .map(param -> {
@@ -70,10 +75,9 @@ public class JobThread extends Thread {
                     return ApiResponse.SUCCESS;
                 })
                 .orElseGet(() -> {
-                    logger.info(">>>>>>>>>>> 重复触发任务，logId:{}",
-                            Optional.ofNullable(triggerParam).map(TriggerParam::getLogId).orElse(-1L));
-                    return ApiResponse.fail("重复触发任务，logId:" +
-                            Optional.ofNullable(triggerParam).map(TriggerParam::getLogId).orElse(-1L));
+                    long logId = Optional.ofNullable(triggerParam).map(TriggerParam::getLogId).orElse(-1L);
+                    logger.info(">>>>>>>>>>> 重复触发任务，logId:{}", logId);
+                    return ApiResponse.fail("重复触发任务，logId:" + logId);
                 });
     }
 
@@ -159,12 +163,14 @@ public class JobThread extends Thread {
 
         try {
             logTaskStart(jobContext);
+            beforeExecuteHook.accept(jobContext);
             executeJob(triggerParam);
             handleTaskResult();
             logTaskSuccess(jobContext);
         } catch (Throwable e) {
             handleTaskException(e);
         } finally {
+            afterExecuteHook.accept(jobContext, null);
             sendCallback(triggerParam);
         }
     }
@@ -200,27 +206,16 @@ public class JobThread extends Thread {
     /**
      * 带超时控制的任务执行
      */
-    private void executeWithTimeout(TriggerParam triggerParam) throws InterruptedException, ExecutionException, TimeoutException {
-        // 使用Lambda简化FutureTask创建
-        FutureTask<Boolean> futureTask = new FutureTask<>(() -> {
+    private void executeWithTimeout(TriggerParam triggerParam) throws Exception {
+        CompletableFuture.runAsync(() -> {
             XxlJobContext.setContext(XxlJobContext.getContext());
-            jobHandler.execute();
-            return true;
-        });
-
-        Thread executorThread = new Thread(futureTask, "xxl-job-timeout-thread-" + triggerParam.getLogId());
-        executorThread.start();
-
-        try {
-            futureTask.get(triggerParam.getExecutorTimeout(), TimeUnit.SECONDS);
-        } catch (TimeoutException e) {
-            XxlJobHelper.log("<br>----------- 任务执行超时");
-            XxlJobHelper.log(e);
-            XxlJobHelper.handleTimeout("任务执行超时");
-            throw e; // 保持异常链完整
-        } finally {
-            executorThread.interrupt();
-        }
+            try {
+                jobHandler.execute();
+            } catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        }, Executors.newSingleThreadExecutor())
+        .get(triggerParam.getExecutorTimeout(), TimeUnit.SECONDS);
     }
 
     /**
@@ -243,10 +238,7 @@ public class JobThread extends Thread {
             // 使用Optional处理可能为null的消息
             context.setHandleMsg(Optional.ofNullable(context.getHandleMsg())
                     .filter(msg -> msg.length() <= MAX_HANDLE_MSG_LENGTH)
-                    .orElseGet(() -> {
-                        assert context.getHandleMsg() != null;
-                        return context.getHandleMsg().substring(0, MAX_HANDLE_MSG_LENGTH) + "...";
-                    }));
+                    .orElseGet(() -> context.getHandleMsg().substring(0, MAX_HANDLE_MSG_LENGTH) + "..."));
         }
     }
 
@@ -346,5 +338,45 @@ public class JobThread extends Thread {
      */
     private void logTaskSuccess(XxlJobContext context) {
         XxlJobHelper.log(LOG_SUCCESS_PREFIX + context.getHandleCode() + ", handleMsg=" + context.getHandleMsg());
+    }
+    
+    /**
+     * 设置任务执行前钩子函数
+     * @param beforeExecuteHook 任务执行前钩子函数
+     */
+    public void setBeforeExecuteHook(Consumer<XxlJobContext> beforeExecuteHook) {
+        this.beforeExecuteHook = Optional.ofNullable(beforeExecuteHook).orElse(context -> {});
+    }
+    
+    /**
+     * 设置任务执行后钩子函数
+     * @param afterExecuteHook 任务执行后钩子函数
+     */
+    public void setAfterExecuteHook(BiConsumer<XxlJobContext, Throwable> afterExecuteHook) {
+        this.afterExecuteHook = Optional.ofNullable(afterExecuteHook).orElse((context, throwable) -> {});
+    }
+    
+    /**
+     * 获取任务ID
+     * @return 任务ID
+     */
+    public int getJobId() {
+        return jobId;
+    }
+    
+    /**
+     * 检查线程是否正在运行
+     * @return 是否正在运行
+     */
+    public boolean isRunning() {
+        return isRunning;
+    }
+    
+    /**
+     * 获取空闲计数
+     * @return 空闲计数
+     */
+    public int getIdleCount() {
+        return idleCount.get();
     }
 }

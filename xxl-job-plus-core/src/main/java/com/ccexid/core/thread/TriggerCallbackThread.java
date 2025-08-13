@@ -18,6 +18,8 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -42,6 +44,10 @@ public class TriggerCallbackThread {
     private Thread callbackThread;
     private Thread retryThread;
     private volatile boolean isStopping = false;
+    private long retryIntervalSeconds = RegisterConstant.BEAT_TIMEOUT; // 重试间隔时间（秒）
+    
+    // 回调处理钩子函数，提高可扩展性
+    private BiConsumer<List<HandleCallbackParam>, Boolean> callbackResultHook = (params, success) -> {};
 
     /**
      * 获取单例实例
@@ -133,7 +139,7 @@ public class TriggerCallbackThread {
 
                 // 重试间隔
                 try {
-                    TimeUnit.SECONDS.sleep(RegisterConstant.BEAT_TIMEOUT);
+                    TimeUnit.SECONDS.sleep(retryIntervalSeconds);
                 } catch (InterruptedException e) {
                     if (!isStopping) {
                         logger.error("重试线程等待被中断", e);
@@ -180,6 +186,9 @@ public class TriggerCallbackThread {
         boolean isSuccess = XxlJobExecutor.getAdminClients().stream()
                 .anyMatch(adminBiz -> attemptCallback(adminBiz, callbackList));
 
+        // 调用回调结果钩子函数
+        callbackResultHook.accept(callbackList, isSuccess);
+        
         if (!isSuccess) {
             saveFailedCallbacks(callbackList);
         }
@@ -321,5 +330,45 @@ public class TriggerCallbackThread {
                 logger.error("{}停止失败", threadName, e);
             }
         }
+    }
+    
+    /**
+     * 设置重试间隔时间
+     * @param retryIntervalSeconds 重试间隔时间（秒）
+     */
+    public void setRetryIntervalSeconds(long retryIntervalSeconds) {
+        this.retryIntervalSeconds = retryIntervalSeconds;
+    }
+    
+    /**
+     * 设置回调结果钩子函数
+     * @param callbackResultHook 回调结果钩子函数
+     */
+    public void setCallbackResultHook(BiConsumer<List<HandleCallbackParam>, Boolean> callbackResultHook) {
+        this.callbackResultHook = Optional.ofNullable(callbackResultHook).orElse((params, success) -> {});
+    }
+    
+    /**
+     * 检查回调线程是否正在运行
+     * @return 是否正在运行
+     */
+    public boolean isCallbackThreadRunning() {
+        return callbackThread != null && callbackThread.isAlive() && !isStopping;
+    }
+    
+    /**
+     * 检查重试线程是否正在运行
+     * @return 是否正在运行
+     */
+    public boolean isRetryThreadRunning() {
+        return retryThread != null && retryThread.isAlive() && !isStopping;
+    }
+    
+    /**
+     * 获取队列中待处理的回调数量
+     * @return 待处理的回调数量
+     */
+    public int getPendingCallbackCount() {
+        return callbackQueue.size();
     }
 }

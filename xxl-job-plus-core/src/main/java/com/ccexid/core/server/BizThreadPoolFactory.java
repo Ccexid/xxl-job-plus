@@ -33,6 +33,26 @@ public class BizThreadPoolFactory {
     }
 
     /**
+     * 创建业务线程池（可自定义参数）
+     * @param coreSize 核心线程数
+     * @param maxSize 最大线程数
+     * @param queueSize 队列大小
+     * @param keepAliveSeconds 空闲线程存活时间（秒）
+     * @return 线程池实例
+     */
+    public static ThreadPoolExecutor create(int coreSize, int maxSize, int queueSize, int keepAliveSeconds) {
+        return new ThreadPoolExecutor(
+                coreSize,
+                maxSize,
+                keepAliveSeconds,
+                TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(queueSize),
+                BizThreadPoolFactory::createBizThread,
+                BizThreadPoolFactory::rejectBizTask
+        );
+    }
+
+    /**
      * 创建业务线程
      */
     private static Thread createBizThread(Runnable r) {
@@ -53,7 +73,20 @@ public class BizThreadPoolFactory {
      */
     public static void shutdown(ThreadPoolExecutor threadPool) {
         if (threadPool != null && !threadPool.isShutdown()) {
-            threadPool.shutdown();
+            try {
+                // 等待任务执行完成，最多等待60秒
+                if (!threadPool.awaitTermination(60, TimeUnit.SECONDS)) {
+                    // 强制关闭
+                    threadPool.shutdownNow();
+                    // 再次等待关闭完成
+                    if (!threadPool.awaitTermination(60, TimeUnit.SECONDS)) {
+                        logger.warn("业务线程池未能正常关闭");
+                    }
+                }
+            } catch (InterruptedException e) {
+                threadPool.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
         }
     }
 }

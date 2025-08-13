@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 
 /**
  * 执行器注册线程
@@ -32,12 +33,18 @@ public class ExecutorRegistrationThread {
 
     private Thread registrationThread;
     private volatile boolean isStopping = false;  // 线程停止标志
+    private long beatTimeout = RegisterConstant.BEAT_TIMEOUT; // 心跳间隔时间（秒）
+    
     /**
      * -- SETTER --
      *  设置调度中心客户端列表（用于解耦，便于测试）
      */
     @Setter
     private List<AdminBiz> adminBizList;  // 调度中心客户端列表（通过注入解耦）
+    
+    // 自定义注册参数创建函数，提高可扩展性
+    private BiFunction<String, String, RegistryParam> registryParamFactory = 
+            (appName, address) -> new RegistryParam(RegisterTypeEnum.EXECUTOR.name(), appName, address);
 
     /**
      * 启动注册线程
@@ -173,7 +180,7 @@ public class ExecutorRegistrationThread {
      * 创建注册参数
      */
     private RegistryParam createRegistryParam(String appName, String address) {
-        return new RegistryParam(RegisterTypeEnum.EXECUTOR.name(), appName, address);
+        return registryParamFactory.apply(appName, address);
     }
 
     /**
@@ -182,7 +189,7 @@ public class ExecutorRegistrationThread {
     private void sleepBetweenRegistrations() {
         try {
             if (!isStopping) {
-                TimeUnit.SECONDS.sleep(RegisterConstant.BEAT_TIMEOUT);
+                TimeUnit.SECONDS.sleep(beatTimeout);
             }
         } catch (InterruptedException e) {
             if (!isStopping) {
@@ -191,6 +198,29 @@ public class ExecutorRegistrationThread {
         }
     }
 
-    // ---------------------- 依赖注入（可选） ----------------------
-
+    // ---------------------- 可扩展性增强方法 ----------------------
+    
+    /**
+     * 设置心跳间隔时间
+     * @param beatTimeout 心跳间隔时间（秒）
+     */
+    public void setBeatTimeout(long beatTimeout) {
+        this.beatTimeout = beatTimeout;
+    }
+    
+    /**
+     * 设置注册参数创建工厂
+     * @param registryParamFactory 注册参数创建工厂
+     */
+    public void setRegistryParamFactory(BiFunction<String, String, RegistryParam> registryParamFactory) {
+        this.registryParamFactory = registryParamFactory;
+    }
+    
+    /**
+     * 检查线程是否正在运行
+     * @return 是否正在运行
+     */
+    public boolean isRunning() {
+        return registrationThread != null && registrationThread.isAlive() && !isStopping;
+    }
 }

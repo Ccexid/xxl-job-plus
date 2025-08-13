@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.stream.IntStream;
 
 /**
  * 网络工具类
@@ -27,24 +28,13 @@ public class NetUtils {
      */
     public static int findAvailablePort(int defaultPort) {
         // 从默认端口向上查找
-        int port = defaultPort;
-        while (port <= MAX_PORT) {
-            if (!isPortInUse(port)) {
-                return port;
-            }
-            port++;
-        }
-
-        // 向上未找到则向下查找
-        port = defaultPort - 1;
-        while (port >= MIN_PORT) {
-            if (!isPortInUse(port)) {
-                return port;
-            }
-            port--;
-        }
-
-        throw new RuntimeException("未找到可用端口");
+        return IntStream.range(defaultPort, MAX_PORT + 1)
+                .filter(port -> !isPortInUse(port))
+                .findFirst()
+                .orElseGet(() -> IntStream.rangeClosed(MIN_PORT, defaultPort - 1)
+                        .filter(port -> !isPortInUse(port))
+                        .max()
+                        .orElseThrow(() -> new RuntimeException("未找到可用端口")));
     }
 
     /**

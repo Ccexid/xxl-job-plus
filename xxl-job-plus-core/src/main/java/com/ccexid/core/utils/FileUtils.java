@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 /**
  * 文件操作工具类
@@ -51,9 +52,12 @@ public class FileUtils {
      * @param fileName 文件名
      */
     public static void deleteFile(String fileName) {
+        Objects.requireNonNull(fileName, "文件名不能为null");
         File file = new File(fileName);
         if (file.exists() && file.isFile()) {
-            file.delete();
+            if (!file.delete()) {
+                logger.warn("文件删除失败: {}", fileName);
+            }
         }
     }
 
@@ -64,6 +68,7 @@ public class FileUtils {
      * @param data 要写入的字节数据
      */
     public static void writeFileContent(File file, byte[] data) {
+        Objects.requireNonNull(file, "文件不能为null");
         if (data == null) {
             return;
         }
@@ -87,6 +92,7 @@ public class FileUtils {
      * @return 文件内容的字节数组，读取失败返回null
      */
     public static byte[] readFileContent(File file) {
+        Objects.requireNonNull(file, "文件不能为null");
         if (!file.exists() || !file.isFile()) {
             logger.warn("文件不存在或不是常规文件:{}", file.getAbsolutePath());
             return null;

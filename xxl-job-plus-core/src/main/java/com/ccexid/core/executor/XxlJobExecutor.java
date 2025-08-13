@@ -1,11 +1,11 @@
 package com.ccexid.core.executor;
 
+import com.ccexid.core.biz.AdminBiz;
+import com.ccexid.core.biz.client.AdminBizClient;
 import com.ccexid.core.handler.IJobHandler;
 import com.ccexid.core.handler.annotation.XxlJob;
 import com.ccexid.core.log.XxlJobFileAppender;
 import com.ccexid.core.server.EmbedServer;
-import com.ccexid.core.biz.AdminBiz;
-import com.ccexid.core.biz.client.AdminBizClient;
 import com.ccexid.core.thread.JobLogFileCleanThread;
 import com.ccexid.core.thread.JobThread;
 import com.ccexid.core.thread.TriggerCallbackThread;
@@ -14,16 +14,13 @@ import com.ccexid.core.utils.NetUtils;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * XXL-Job执行器核心类
@@ -103,14 +100,14 @@ public class XxlJobExecutor {
     /**
      * 初始化调度中心客户端列表
      */
-    private void initializeAdminClients() throws Exception {
+    private void initializeAdminClients() {
         adminClients = Optional.ofNullable(adminServerAddresses)
-                .filter(addresses -> !addresses.trim().isEmpty())
-                .map(addresses -> Stream.of(addresses.trim().split(","))
-                        .filter(addr -> addr != null && !addr.trim().isEmpty())
+                .filter(StringUtils::hasText)
+                .map(addresses -> Arrays.stream(addresses.trim().split(","))
+                        .filter(StringUtils::hasText)
                         .map(addr -> (AdminBiz) new AdminBizClient(addr.trim(), accessToken, timeout))
                         .collect(Collectors.toList()))
-                .orElse(new ArrayList<>());
+                .orElseGet(ArrayList::new);
     }
 
     public static List<AdminBiz> getAdminClients() {
@@ -284,7 +281,7 @@ public class XxlJobExecutor {
                 JobThread oldJobThread = removeJobThread(jobId, "执行器销毁，终止任务线程");
                 if (oldJobThread != null) {
                     try {
-                        oldJobThread.join();  // 等待线程执行完毕
+                        oldJobThread.join();
                     } catch (InterruptedException e) {
                         logger.error("任务线程[{}]销毁等待失败", jobId, e);
                     }

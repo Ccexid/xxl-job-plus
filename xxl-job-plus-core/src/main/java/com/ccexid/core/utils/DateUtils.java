@@ -9,6 +9,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Date;
+import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 /**
  * 日期时间工具类
@@ -50,8 +52,8 @@ public class DateUtils {
     /**
      * 按照指定格式格式化日期
      *
-     * @param date      日期对象
-     * @param pattern   格式模板
+     * @param date    日期对象
+     * @param pattern 格式模板
      * @return 格式化后的字符串
      */
     public static String format(Date date, String pattern) {
@@ -61,8 +63,8 @@ public class DateUtils {
     /**
      * 按照指定格式化器格式化日期
      *
-     * @param date          日期对象
-     * @param formatter     日期格式化器
+     * @param date      日期对象
+     * @param formatter 日期格式化器
      * @return 格式化后的字符串
      */
     private static String format(Date date, DateTimeFormatter formatter) {
@@ -108,9 +110,9 @@ public class DateUtils {
     /**
      * 按照指定格式化器解析字符串为日期对象
      *
-     * @param dateString     日期字符串
-     * @param formatter      日期格式化器
-     * @param isDateOnly     是否仅日期（无时间部分）
+     * @param dateString 日期字符串
+     * @param formatter  日期格式化器
+     * @param isDateOnly 是否仅日期（无时间部分）
      * @return 日期对象
      */
     private static Date parse(String dateString, DateTimeFormatter formatter, boolean isDateOnly) {
@@ -137,8 +139,8 @@ public class DateUtils {
     /**
      * 为日期增加指定年数
      *
-     * @param date    原始日期
-     * @param amount  增加的年数（负数表示减少）
+     * @param date   原始日期
+     * @param amount 增加的年数（负数表示减少）
      * @return 处理后的日期
      */
     public static Date addYears(Date date, int amount) {
@@ -148,8 +150,8 @@ public class DateUtils {
     /**
      * 为日期增加指定月数
      *
-     * @param date    原始日期
-     * @param amount  增加的月数（负数表示减少）
+     * @param date   原始日期
+     * @param amount 增加的月数（负数表示减少）
      * @return 处理后的日期
      */
     public static Date addMonths(Date date, int amount) {
@@ -159,8 +161,8 @@ public class DateUtils {
     /**
      * 为日期增加指定天数
      *
-     * @param date    原始日期
-     * @param amount  增加的天数（负数表示减少）
+     * @param date   原始日期
+     * @param amount 增加的天数（负数表示减少）
      * @return 处理后的日期
      */
     public static Date addDays(Date date, int amount) {
@@ -170,8 +172,8 @@ public class DateUtils {
     /**
      * 为日期增加指定小时数
      *
-     * @param date    原始日期
-     * @param amount  增加的小时数（负数表示减少）
+     * @param date   原始日期
+     * @param amount 增加的小时数（负数表示减少）
      * @return 处理后的日期
      */
     public static Date addHours(Date date, int amount) {
@@ -181,38 +183,20 @@ public class DateUtils {
     /**
      * 为日期增加指定分钟数
      *
-     * @param date    原始日期
-     * @param amount  增加的分钟数（负数表示减少）
+     * @param date   原始日期
+     * @param amount 增加的分钟数（负数表示减少）
      * @return 处理后的日期
      */
     public static Date addMinutes(Date date, int amount) {
         return add(date, (localDateTime) -> localDateTime.plusMinutes(amount));
     }
 
-    /**
-     * 通用日期加减操作
-     *
-     * @param date          原始日期
-     * @param dateOperator  日期操作函数
-     * @return 处理后的日期
-     */
-    private static Date add(Date date, DateOperator dateOperator) {
-        if (date == null) {
-            return null;
-        }
-        // 转换为LocalDateTime进行操作
-        LocalDateTime localDateTime = LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
-        // 应用操作
-        LocalDateTime resultDateTime = dateOperator.operate(localDateTime);
-        // 转换回Date
-        return Date.from(resultDateTime.atZone(ZoneId.systemDefault()).toInstant());
-    }
-
-    /**
-     * 日期操作函数式接口
-     */
-    @FunctionalInterface
-    private interface DateOperator {
-        LocalDateTime operate(LocalDateTime dateTime);
+    // 移除自定义DateOperator，使用UnaryOperator<LocalDateTime>
+    private static Date add(Date date, UnaryOperator<LocalDateTime> operator) {
+        return Optional.ofNullable(date)
+                .map(d -> LocalDateTime.ofInstant(d.toInstant(), ZoneId.systemDefault()))
+                .map(operator)
+                .map(ldt -> Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant()))
+                .orElse(null);
     }
 }

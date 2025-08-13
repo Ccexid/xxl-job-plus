@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiPredicate;
 
 /**
  * 任务日志文件清理线程
@@ -25,6 +26,10 @@ public class JobLogFileCleanThread {
 
     private Thread cleanThread;
     private volatile boolean isStopping = false;
+    private long cleanIntervalHours = 24; // 清理间隔时间（小时）
+    
+    // 日志目录验证策略，提高可扩展性
+    private BiPredicate<File, String> logDirectoryValidator = (file, name) -> file.isDirectory() && name.contains("-");
 
     /**
      * 获取单例实例
@@ -57,7 +62,7 @@ public class JobLogFileCleanThread {
 
                 // 每天执行一次清理
                 try {
-                    TimeUnit.DAYS.sleep(1);
+                    TimeUnit.HOURS.sleep(cleanIntervalHours);
                 } catch (InterruptedException e) {
                     if (!isStopping) {
                         logger.error("日志清理线程等待被中断", e);
@@ -135,6 +140,30 @@ public class JobLogFileCleanThread {
      * @return 是否为有效的日志目录
      */
     private boolean isValidLogDirectory(File file) {
-        return file.isDirectory() && file.getName().contains("-");
+        return logDirectoryValidator.test(file, file.getName());
+    }
+    
+    /**
+     * 设置清理间隔时间
+     * @param cleanIntervalHours 清理间隔时间（小时）
+     */
+    public void setCleanIntervalHours(long cleanIntervalHours) {
+        this.cleanIntervalHours = cleanIntervalHours;
+    }
+    
+    /**
+     * 设置日志目录验证策略
+     * @param logDirectoryValidator 日志目录验证策略
+     */
+    public void setLogDirectoryValidator(BiPredicate<File, String> logDirectoryValidator) {
+        this.logDirectoryValidator = logDirectoryValidator;
+    }
+    
+    /**
+     * 检查线程是否正在运行
+     * @return 是否正在运行
+     */
+    public boolean isRunning() {
+        return cleanThread != null && cleanThread.isAlive() && !isStopping;
     }
 }

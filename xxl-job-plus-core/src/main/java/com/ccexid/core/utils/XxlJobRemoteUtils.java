@@ -156,7 +156,6 @@ public class XxlJobRemoteUtils {
     private static String readResponse(HttpURLConnection connection) throws IOException {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
-
             return reader.lines().collect(Collectors.joining());
         }
     }
