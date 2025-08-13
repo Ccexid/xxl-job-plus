@@ -17,6 +17,7 @@ import org.springframework.core.annotation.AnnotatedElementUtils;
 
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.Objects;
 
 
 /**
@@ -31,21 +32,17 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
     // start
     @Override
     public void afterSingletonsInstantiated() {
-
-        // init JobHandler Repository
-        /*initJobHandlerRepository(applicationContext);*/
-
-        // init JobHandler Repository (for method)
-        initJobHandlerMethodRepository(applicationContext);
-
-        // refresh GlueFactory
-        GlueFactory.refreshInstance(1);
-
-        // super start
         try {
+            // Initialize job handler repository from methods
+            initJobHandlerMethodRepository(applicationContext);
+            
+            // Refresh GlueFactory
+            GlueFactory.refreshInstance(1);
+            
+            // Start the executor
             super.start();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("XXL-Job执行器启动失败: " + e.getMessage(), e);
         }
     }
 
@@ -54,29 +51,6 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
     public void destroy() {
         super.destroy();
     }
-
-
-    /*private void initJobHandlerRepository(ApplicationContext applicationContext) {
-        if (applicationContext == null) {
-            return;
-        }
-
-        // init job handler action
-        Map<String, Object> serviceBeanMap = applicationContext.getBeansWithAnnotation(JobHandler.class);
-
-        if (serviceBeanMap != null && serviceBeanMap.size() > 0) {
-            for (Object serviceBean : serviceBeanMap.values()) {
-                if (serviceBean instanceof IJobHandler) {
-                    String name = serviceBean.getClass().getAnnotation(JobHandler.class).value();
-                    IJobHandler handler = (IJobHandler) serviceBean;
-                    if (loadJobHandler(name) != null) {
-                        throw new RuntimeException("xxl-job jobhandler[" + name + "] naming conflicts.");
-                    }
-                    registJobHandler(name, handler);
-                }
-            }
-        }
-    }*/
 
     private void initJobHandlerMethodRepository(ApplicationContext applicationContext) {
         if (applicationContext == null) {
@@ -96,29 +70,23 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
                 bean = applicationContext.getBean(beanDefinitionName);
             }
 
-            // filter method
-            Map<Method, XxlJob> annotatedMethods = null;   // referred to ：org.springframework.context.event.EventListenerMethodProcessor.processBean
+            // Filter methods with XxlJob annotation
+            Map<Method, XxlJob> annotatedMethods = null;
             try {
                 annotatedMethods = MethodIntrospector.selectMethods(bean.getClass(),
-                        new MethodIntrospector.MetadataLookup<XxlJob>() {
-                            @Override
-                            public XxlJob inspect(Method method) {
-                                return AnnotatedElementUtils.findMergedAnnotation(method, XxlJob.class);
-                            }
-                        });
+                        (MethodIntrospector.MetadataLookup<XxlJob>) method -> AnnotatedElementUtils.findMergedAnnotation(method, XxlJob.class));
             } catch (Throwable ex) {
-                logger.error("xxl-job method-jobhandler resolve error for bean[" + beanDefinitionName + "].", ex);
-            }
-            if (annotatedMethods==null || annotatedMethods.isEmpty()) {
-                continue;
+                logger.error("xxl-job method-jobHandler resolve error for bean[{}].", beanDefinitionName, ex);
             }
 
-            // generate and regist method job handler
-            for (Map.Entry<Method, XxlJob> methodXxlJobEntry : annotatedMethods.entrySet()) {
-                Method executeMethod = methodXxlJobEntry.getKey();
-                XxlJob xxlJob = methodXxlJobEntry.getValue();
-                // regist
-                registerAnnotatedJobHandler(xxlJob, bean, executeMethod);
+            if (annotatedMethods != null && !annotatedMethods.isEmpty()) {
+                // generate and regist method job handler
+                for (Map.Entry<Method, XxlJob> methodXxlJobEntry : annotatedMethods.entrySet()) {
+                    Method executeMethod = methodXxlJobEntry.getKey();
+                    XxlJob xxlJob = methodXxlJobEntry.getValue();
+                    // regist
+                    registerAnnotatedJobHandler(xxlJob, bean, executeMethod);
+                }
             }
 
         }
@@ -129,20 +97,11 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        XxlJobSpringExecutor.applicationContext = applicationContext;
+        XxlJobSpringExecutor.applicationContext = Objects.requireNonNull(applicationContext, "ApplicationContext不能为空");
     }
 
     public static ApplicationContext getApplicationContext() {
         return applicationContext;
     }
-
-    /*
-    BeanDefinitionRegistryPostProcessor
-    registry.getBeanDefine()
-    @Override
-    public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
-        this.registry = registry;
-    }
-    * */
 
 }
