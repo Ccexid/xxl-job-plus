@@ -13,8 +13,6 @@ import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Date;
 import java.util.Optional;
 import java.util.Set;
@@ -281,7 +279,7 @@ public class JobThread extends Thread {
                 ? buildStoppedCallback(triggerParam)
                 : buildNormalCallback(triggerParam);
 
-        TriggerCallbackThread.pushCallBack(callbackParam);
+        TriggerCallbackThread.pushCallback(callbackParam);
     }
 
     /**
@@ -320,7 +318,7 @@ public class JobThread extends Thread {
                     XxlJobContext.HandleCode.FAIL.getCode(),
                     stopReason + " [任务未执行，在队列中已终止]"
             );
-            TriggerCallbackThread.pushCallBack(callbackParam);
+            TriggerCallbackThread.pushCallback(callbackParam);
         });
         triggerQueue.clear(); // 清空队列释放资源
     }
