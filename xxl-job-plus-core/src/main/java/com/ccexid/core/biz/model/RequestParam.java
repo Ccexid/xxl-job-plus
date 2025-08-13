@@ -1,4 +1,4 @@
-package com.ccexid.core.service.model;
+package com.ccexid.core.biz.model;
 
 import com.ccexid.core.utils.XxlJobRemoteUtils;
 import io.netty.channel.ChannelHandlerContext;

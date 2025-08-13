@@ -1,9 +1,9 @@
-package com.ccexid.core.service.client;
+package com.ccexid.core.biz.client;
 
-import com.ccexid.core.service.AdminBiz;
-import com.ccexid.core.service.model.ApiResponse;
-import com.ccexid.core.service.model.HandleCallbackParam;
-import com.ccexid.core.service.model.RegistryParam;
+import com.ccexid.core.biz.AdminBiz;
+import com.ccexid.core.biz.model.ApiResponse;
+import com.ccexid.core.biz.model.HandleCallbackParam;
+import com.ccexid.core.biz.model.RegistryParam;
 import com.ccexid.core.utils.XxlJobRemoteUtils;
 import lombok.Data;
 

@@ -1,6 +1,6 @@
 package com.ccexid.core.utils;
 
-import com.ccexid.core.service.model.ApiResponse;
+import com.ccexid.core.biz.model.ApiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
