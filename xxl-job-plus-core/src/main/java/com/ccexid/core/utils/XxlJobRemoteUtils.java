@@ -58,8 +58,8 @@ public class XxlJobRemoteUtils {
      * @param returnTargetClass 响应数据的目标类型
      * @return 远程调用结果封装
      */
-    public static ApiResponse<?> postJson(String url, String accessToken, int timeoutSeconds,
-                                          Object requestObj, Class<?> returnTargetClass) {
+    public static <T> ApiResponse<T> postJson(String url, String accessToken, int timeoutSeconds,
+                                              Object requestObj, Class<T> returnTargetClass) {
         HttpURLConnection connection = null;
 
         try {
@@ -164,7 +164,7 @@ public class XxlJobRemoteUtils {
     /**
      * 解析响应JSON为ReturnT对象
      */
-    private static ApiResponse<?> parseResponse(String responseJson, String url, Class<?> targetClass) {
+    private static <T> ApiResponse<T> parseResponse(String responseJson, String url, Class<T> targetClass) {
         try {
             return GsonUtils.fromJsonWithGeneric(responseJson, ApiResponse.class, targetClass);
         } catch (Exception e) {
