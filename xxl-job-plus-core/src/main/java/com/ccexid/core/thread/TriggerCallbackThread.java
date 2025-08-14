@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * @author xuxueli 2016-07-22
  */
 @Slf4j
-public class TriggerCallbackThread implements IThread{
+public class TriggerCallbackThread implements IThread {
 
     private static final TriggerCallbackThread INSTANCE = new TriggerCallbackThread();
 
@@ -149,6 +149,15 @@ public class TriggerCallbackThread implements IThread{
             } catch (InterruptedException e) {
                 log.error(e.getMessage(), e);
                 Thread.currentThread().interrupt(); // 重新设置中断状态
+            } catch (Throwable e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+
+        if (triggerRetryCallbackThread != null) {
+            triggerRetryCallbackThread.interrupt();
+            try {
+                triggerRetryCallbackThread.join();
             } catch (Throwable e) {
                 log.error(e.getMessage(), e);
             }

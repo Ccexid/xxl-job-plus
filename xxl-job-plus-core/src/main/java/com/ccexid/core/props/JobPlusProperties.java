@@ -27,7 +27,7 @@ public class JobPlusProperties {
     private static final Integer LOG_RETENTION_DAYS_DEFAULT = 30;
 
     @Data
-    private static class AdminProperties {
+    public static class AdminProperties {
         /**
          * 调度中心地址列表
          */

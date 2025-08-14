@@ -23,6 +23,11 @@ public class JobLogFileCleanThread implements IThread {
     private static final String DATE_FORMAT_PATTERN = "yyyy-MM-dd";
     private static final long ONE_DAY_MILLISECONDS = 24 * 60 * 60 * 1000L;
 
+    /**
+     * 获取单例实例
+     *
+     * @return JobLogFileCleanThread 单例对象
+     */
     public static JobLogFileCleanThread getInstance() {
         return INSTANCE;
     }
@@ -30,9 +35,14 @@ public class JobLogFileCleanThread implements IThread {
     private Thread localThread;
     private volatile boolean toStop = false;
 
+    /**
+     * 启动日志文件清理线程
+     *
+     * @param logRetentionDays 日志保留天数，小于3时不会启动清理任务
+     */
     public void start(final long logRetentionDays) {
 
-        // limit min value
+        // 限制最小值，避免误删重要日志
         if (logRetentionDays < 3) {
             return;
         }
@@ -40,11 +50,11 @@ public class JobLogFileCleanThread implements IThread {
         localThread = new Thread(() -> {
             while (!toStop) {
                 try {
-                    // clean log dir, over logRetentionDays
+                    // 清理超过保留天数的日志目录
                     File[] childDirs = new File(JobLogFileAppender.getLogPath()).listFiles();
                     if (childDirs != null && childDirs.length > 0) {
 
-                        // today
+                        // 获取今天的起始时间（00:00:00）
                         Calendar todayCal = Calendar.getInstance();
                         todayCal.set(Calendar.HOUR_OF_DAY, 0);
                         todayCal.set(Calendar.MINUTE, 0);
@@ -55,7 +65,7 @@ public class JobLogFileCleanThread implements IThread {
 
                         for (File childFile : childDirs) {
 
-                            // valid
+                            // 跳过非目录文件和不包含日期格式的文件夹
                             if (!childFile.isDirectory()) {
                                 continue;
                             }
@@ -63,12 +73,13 @@ public class JobLogFileCleanThread implements IThread {
                                 continue;
                             }
 
-                            // file create date
+                            // 解析文件夹名称中的日期信息
                             Date logFileCreateDate = DateUtil.parse(childFile.getName(), DATE_FORMAT_PATTERN);
                             if (logFileCreateDate == null) {
                                 continue;
                             }
 
+                            // 判断是否超过保留天数，若超过则删除该目录
                             if ((todayDate.getTime() - logFileCreateDate.getTime()) >= logRetentionDays * ONE_DAY_MILLISECONDS) {
                                 if (!FileUtil.deleteRecursively(childFile)) {
                                     log.warn("Delete log file failed: {}", childFile.getAbsolutePath());
@@ -86,12 +97,13 @@ public class JobLogFileCleanThread implements IThread {
                 }
 
                 try {
+                    // 每天执行一次清理操作
                     TimeUnit.DAYS.sleep(1);
                 } catch (InterruptedException e) {
                     if (!toStop) {
                         log.error("Sleep interrupted", e);
                     }
-                    // Restore interrupted state
+                    // 恢复中断状态
                     Thread.currentThread().interrupt();
                 }
             }
@@ -104,6 +116,10 @@ public class JobLogFileCleanThread implements IThread {
     }
 
 
+    /**
+     * 停止当前线程运行
+     * 中断线程并等待其结束
+     */
     @Override
     public void toStop() {
         toStop = true;
@@ -112,13 +128,13 @@ public class JobLogFileCleanThread implements IThread {
             return;
         }
 
-        // interrupt and wait
+        // 中断并等待线程结束
         localThread.interrupt();
         try {
             localThread.join();
         } catch (InterruptedException e) {
             log.error("Stop thread error", e);
-            // Restore interrupted state
+            // 恢复中断状态
             Thread.currentThread().interrupt();
         }
     }
