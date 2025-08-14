@@ -1,6 +1,7 @@
 package com.ccexid.core.context;
 
 import com.alibaba.ttl.TransmittableThreadLocal;
+import com.ccexid.core.enums.ResponseCode;
 import lombok.Data;
 
 /**
@@ -65,6 +66,7 @@ public class JobPlusContext {
         this.jobLogFileName = jobLogFileName;
         this.shardIndex = shardIndex;
         this.shardTotal = shardTotal;
+        this.handleCode = ResponseCode.SUCCESS.getCode();
     }
 
     public static void setJobContext(JobPlusContext xxlJobContext){
