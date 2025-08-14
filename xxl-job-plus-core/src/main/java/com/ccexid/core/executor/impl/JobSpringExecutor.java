@@ -56,7 +56,7 @@ public class JobSpringExecutor extends JobExecutor
      */
     @Override
     public void afterSingletonsInstantiated() {
-        postProcessAfterInitialization(applicationContext);
+        initJobHandlerMethod(applicationContext);
         try {
             super.start();
         } catch (Exception e) {
@@ -91,48 +91,39 @@ public class JobSpringExecutor extends JobExecutor
      *
      * @param applicationContext Spring应用上下文
      */
-    private void postProcessAfterInitialization(ApplicationContext applicationContext) {
+    private void initJobHandlerMethod(ApplicationContext applicationContext) {
         if (applicationContext == null) {
             return;
         }
-        // 初始化 method 类型的job
+        // 获取所有Bean定义名称
         String[] beanDefinitionNames = applicationContext.getBeanNamesForType(Object.class, false, true);
 
         for (String beanDefinitionName : beanDefinitionNames) {
             Object bean = null;
-            Lazy onBean = applicationContext.findAnnotationOnBean(beanDefinitionName, Lazy.class);
+            Lazy lazyAnnotation = applicationContext.findAnnotationOnBean(beanDefinitionName, Lazy.class);
 
-            if (onBean != null) {
+            if (lazyAnnotation != null) {
                 log.debug("beanDefinitionName:{} is lazy", beanDefinitionName);
                 continue;
             } else {
                 bean = applicationContext.getBean(beanDefinitionName);
             }
-            // 过滤掉非 method 类型的job
+            
+            // 查找带有@XxlJob注解的方法
             Map<Method, XxlJob> annotatedMethods = null;
             try {
-                annotatedMethods = MethodIntrospector.selectMethods(bean.getClass(), new MethodIntrospector.MetadataLookup<XxlJob>() {
-                    /**
-                     * Perform a lookup on the given method and return associated metadata, if any.
-                     *
-                     * @param method the method to inspect
-                     * @return non-null metadata to be associated with a method if there is a match,
-                     * or {@code null} for no match
-                     */
-                    @Override
-                    public XxlJob inspect(Method method) {
-                        return AnnotatedElementUtils.findMergedAnnotation(method, XxlJob.class);
-                    }
-                });
+                annotatedMethods = MethodIntrospector.selectMethods(bean.getClass(), 
+                    (MethodIntrospector.MetadataLookup<XxlJob>) method -> 
+                        AnnotatedElementUtils.findMergedAnnotation(method, XxlJob.class));
             } catch (Throwable e) {
-                log.error("xxl-job method error", e);
+                log.error("xxl-job method-error", e);
             }
 
             if (annotatedMethods == null || annotatedMethods.isEmpty()) {
                 continue;
             }
 
-            // 添加job
+            // 注册任务处理器
             for (Map.Entry<Method, XxlJob> methodXxlJobEntry : annotatedMethods.entrySet()) {
                 Method executeMethod = methodXxlJobEntry.getKey();
                 XxlJob xxlJob = methodXxlJobEntry.getValue();

@@ -2,11 +2,16 @@ package com.ccexid.core.log;
 
 import com.ccexid.core.model.LogResult;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.text.SimpleDateFormat;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Date;
 
 /**
@@ -17,10 +22,9 @@ import java.util.Date;
  */
 @Slf4j
 public class JobLogFileAppender {
-    private static volatile String logBasePath = "/data/app-logs/xxl-job/job-handler";
+    private static String logBasePath = "/data/app-logs/xxl-job/job-handler";
     private static final String GLUE_DIR_NAME = "glue-source";
-    private static volatile String glueSrcPath = logBasePath.concat("/glue-source");
-    private static final String DATE_FORMAT = "yyyy-MM-dd";
+    private static String glueSrcPath = logBasePath.concat("/glue-source");
 
     /**
      * 获取日志基础路径
@@ -48,27 +52,29 @@ public class JobLogFileAppender {
      * @param logPath 指定的日志路径，如果为null或空字符串则使用默认路径
      */
     public static void initLogPath(String logPath) {
-        // init
-        if (logPath != null && !logPath.trim().isEmpty()) {
-            logBasePath = logPath;
-        }
-        // mk base dir
-        File logPathDir = new File(logBasePath);
-        if (!logPathDir.exists()) {
-            if (!logPathDir.mkdirs()) {
-                log.error("创建日志基础目录失败: {}", logBasePath);
+        synchronized (JobLogFileAppender.class) {
+            // init
+            if (StringUtils.isNotBlank(logPath)) {
+                logBasePath = logPath;
             }
-        }
-        logBasePath = logPathDir.getPath();
+            // mk base dir
+            File logPathDir = new File(logBasePath);
+            if (!logPathDir.exists()) {
+                if (!logPathDir.mkdirs()) {
+                    log.error("创建日志基础目录失败: {}", logBasePath);
+                }
+            }
+            logBasePath = logPathDir.getPath();
 
-        // mk glue dir
-        File glueBaseDir = new File(logPathDir, GLUE_DIR_NAME);
-        if (!glueBaseDir.exists()) {
-            if (!glueBaseDir.mkdirs()) {
-                log.error("创建Glue源码目录失败: {}", glueBaseDir.getPath());
+            // mk glue dir
+            File glueBaseDir = new File(logPathDir, GLUE_DIR_NAME);
+            if (!glueBaseDir.exists()) {
+                if (!glueBaseDir.mkdirs()) {
+                    log.error("创建Glue源码目录失败: {}", glueBaseDir.getPath());
+                }
             }
+            glueSrcPath = glueBaseDir.getPath();
         }
-        glueSrcPath = glueBaseDir.getPath();
     }
 
     /**
@@ -80,18 +86,17 @@ public class JobLogFileAppender {
      * @return 日志文件名（完整路径）
      */
     public static String makeLogFileName(Date triggerDate, long logId) {
-        // filePath/yyyy-MM-dd
-        SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);    // avoid concurrent problem, can not be static
-        String dateStr = sdf.format(triggerDate);
-        File logFilePath = new File(getLogPath(), dateStr);
-        if (!logFilePath.exists()) {
-            if (!logFilePath.mkdirs()) {
-                log.error("创建日志文件目录失败: {}", logFilePath.getPath());
+        String dateStr = DateFormatUtils.format(triggerDate, "yyyy-MM-dd");
+        Path logFilePath = Paths.get(getLogPath(), dateStr);
+        if (!Files.exists(logFilePath)) {
+            try {
+                Files.createDirectories(logFilePath);
+            } catch (IOException e) {
+                log.error("创建日志文件目录失败: {}", logFilePath, e);
             }
         }
 
-        // filePath/yyyy-MM-dd/9999.log
-        return String.format("%s%s%d.log", logFilePath.getPath(), File.separator, logId);
+        return logFilePath.resolve(logId + ".log").toString();
     }
 
     /**
@@ -102,13 +107,11 @@ public class JobLogFileAppender {
      * @param appendLog   要追加的日志内容
      */
     public static void appendLog(String logFileName, String appendLog) {
-        // log file
-        if (logFileName == null || logFileName.trim().isEmpty()) {
+        if (StringUtils.isBlank(logFileName)) {
             return;
         }
         File logFile = new File(logFileName);
 
-        // create parent dir if not exists
         File parentDir = logFile.getParentFile();
         if (parentDir != null && !parentDir.exists()) {
             if (!parentDir.mkdirs()) {
@@ -117,33 +120,18 @@ public class JobLogFileAppender {
             }
         }
 
-        if (!logFile.exists()) {
-            try {
-                if (!logFile.createNewFile()) {
-                    log.error("创建日志文件失败: {}", logFileName);
-                    return;
-                }
-            } catch (IOException e) {
-                log.error("创建日志文件异常: {}", logFileName, e);
-                return;
-            }
-        }
-
-        // log
         if (appendLog == null) {
             appendLog = "";
         }
         appendLog += "\r\n";
 
-        // append file content
-        try (FileOutputStream fos = new FileOutputStream(logFile, true)) {
-            fos.write(appendLog.getBytes(StandardCharsets.UTF_8));
-            fos.flush();
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(logFile, true), StandardCharsets.UTF_8))) {
+            writer.write(appendLog);
         } catch (Exception e) {
             log.error("写入日志文件异常: {}", logFileName, e);
         }
     }
-
 
     /**
      * 读取日志文件内容
@@ -156,13 +144,8 @@ public class JobLogFileAppender {
             return null;
         }
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(logFile.toPath()), StandardCharsets.UTF_8))) {
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                sb.append(line).append(System.lineSeparator());
-            }
-            return sb.toString();
+        try {
+            return FileUtils.readFileToString(logFile, StandardCharsets.UTF_8);
         } catch (IOException e) {
             log.error("读取日志文件异常: {}", logFile.getAbsolutePath(), e);
         } catch (OutOfMemoryError e) {
@@ -179,7 +162,7 @@ public class JobLogFileAppender {
      * @return 日志结果对象，包含读取的行号范围和日志内容
      */
     public static LogResult readLog(String logFileName, int fromLineNum) {
-        if (logFileName == null || logFileName.trim().isEmpty()) {
+        if (StringUtils.isBlank(logFileName)) {
             return new LogResult(fromLineNum, 0, "readLog fail, logFile not found", true);
         }
         File logFile = new File(logFileName);
@@ -188,26 +171,24 @@ public class JobLogFileAppender {
             return new LogResult(fromLineNum, 0, "readLog fail, logFile not exists", true);
         }
 
-        // read file
         StringBuilder logContentBuffer = new StringBuilder();
         int toLineNum = 0;
-        
-        try (LineNumberReader reader = new LineNumberReader(
-                new InputStreamReader(Files.newInputStream(logFile.toPath()), StandardCharsets.UTF_8))) {
-            
-            String line;
-            while ((line = reader.readLine()) != null) {
-                toLineNum = reader.getLineNumber(); // [from, to], start as 1
-                if (toLineNum >= fromLineNum) {
+
+        try (LineIterator iterator = FileUtils.lineIterator(logFile, StandardCharsets.UTF_8.name())) {
+            int lineNumber = 1;
+            while (iterator.hasNext()) {
+                String line = iterator.nextLine();
+                if (lineNumber >= fromLineNum) {
                     logContentBuffer.append(line).append("\n");
+                    toLineNum = lineNumber;
                 }
+                lineNumber++;
             }
         } catch (IOException e) {
             log.error("读取日志文件异常: {}", logFile.getAbsolutePath(), e);
             return new LogResult(fromLineNum, 0, "readLog fail, IOException", true);
         }
 
-        // result
         return new LogResult(fromLineNum, toLineNum, logContentBuffer.toString(), true);
     }
 }
