@@ -6,6 +6,7 @@ import com.ccexid.core.enums.ResponseCode;
 import com.ccexid.core.model.*;
 import com.ccexid.core.thread.ExecutorRegistryThread;
 import com.ccexid.core.util.GsonTool;
+import com.ccexid.core.util.ThrowableUtil;
 import com.ccexid.core.util.XxlJobRemotingUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.Unpooled;
@@ -178,7 +179,7 @@ public class EmbedServer {
                 }
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
-                return ResponseEntity.of(ResponseCode.INTERNAL_SERVER_ERROR, "request error:" + e.getMessage());
+                return ResponseEntity.of(ResponseCode.INTERNAL_SERVER_ERROR, "request error:" + ThrowableUtil.toString(e));
             }
         }
 

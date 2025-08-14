@@ -7,12 +7,11 @@ import java.io.StringWriter;
  * @author xuxueli 2018-10-20 20:07:26
  */
 public class ThrowableUtil {
-
     /**
-     * parse error to string
+     * 将Throwable异常转换为字符串形式
      *
-     * @param e
-     * @return
+     * @param e 需要转换的Throwable异常对象
+     * @return 异常的完整堆栈信息字符串
      */
     public static String toString(Throwable e) {
         StringWriter stringWriter = new StringWriter();
