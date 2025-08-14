@@ -43,7 +43,7 @@ public class JdkSerializeTool {
             return null;
         }
         try {
-            return (T) SerializationUtils.deserialize(bytes);
+            return SerializationUtils.deserialize(bytes);
         } catch (Exception e) {
             log.error("deserialize error", e);
             return null;
