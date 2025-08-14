@@ -3,8 +3,8 @@ package com.ccexid.core.context;
 import com.ccexid.core.enums.ResponseCode;
 import com.ccexid.core.log.JobLogFileAppender;
 import com.ccexid.core.util.DateUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
@@ -17,8 +17,8 @@ import java.util.Optional;
  * JobPlusHelper类提供了对JobPlusContext的便捷访问方法
  * 该类封装了获取作业上下文信息和设置处理结果的静态方法
  */
+@Slf4j
 public class JobPlusHelper {
-    private static Logger logger = LoggerFactory.getLogger("xxl-job-plus logger");
 
     /**
      * 获取当前线程的作业上下文实例
@@ -156,7 +156,7 @@ public class JobPlusHelper {
      */
     private static boolean logDetail(StackTraceElement callInfo, String appendLog) {
         if (callInfo == null) {
-            logger.warn("callInfo is null, skip logging.");
+            log.warn("callInfo is null, skip logging.");
             return false;
         }
 
@@ -166,17 +166,17 @@ public class JobPlusHelper {
             sb.append(DateUtil.formatDateTime(new Date())).append(" ")
                     .append("[").append(callInfo.getClassName()).append("#").append(callInfo.getMethodName()).append("]").append("-")
                     .append("[").append(callInfo.getLineNumber()).append("]").append("-")
-                    .append("[").append(Thread.currentThread().getName()).append("] ").append(appendLog != null ? appendLog : "");
+                    .append("[").append(Thread.currentThread().getName()).append("] ").append(StringUtils.defaultString(appendLog));
 
             String formatAppendLog = sb.toString();
             String logFileName = context.getJobLogFileName();
 
             // 根据日志文件名是否存在决定日志输出方式
-            if (logFileName != null && !logFileName.trim().isEmpty()) {
+            if (StringUtils.isNotBlank(logFileName)) {
                 JobLogFileAppender.appendLog(logFileName, formatAppendLog);
                 return true;
             } else {
-                logger.error(formatAppendLog);
+                log.error(formatAppendLog);
                 return false;
             }
         }).orElse(false);
