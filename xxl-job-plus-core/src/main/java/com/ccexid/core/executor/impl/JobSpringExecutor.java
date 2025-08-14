@@ -81,7 +81,7 @@ public class JobSpringExecutor extends JobExecutor
      *
      * @return Spring应用上下文
      */
-    public static ApplicationContext getApplicationContext() {
+    public static ApplicationContext getContext() {
         return applicationContext;
     }
 
