@@ -65,8 +65,6 @@ public class JobPlusManagerProperties {
             return logRetentionDays < LOG_RETENTION_DAYS ? -1 : logRetentionDays;
         }
     }
-
-    private Boolean enable = true;
     /**
      * 访问令牌，用于API认证和授权
      */

@@ -1,6 +1,7 @@
 package com.ccexid.core.configuration;
 
 import com.ccexid.core.annotation.EnableJobAdmin;
+import com.ccexid.core.configuration.condition.OnEnableJobPlusManagerAnnotationCondition;
 import com.ccexid.core.props.JobPlusManagerProperties;
 import com.ccexid.core.scheduler.JobScheduler;
 import lombok.extern.slf4j.Slf4j;
@@ -9,9 +10,11 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Conditional;
 
 @AutoConfiguration
 @ConditionalOnClass(EnableJobAdmin.class)
+@Conditional(OnEnableJobPlusManagerAnnotationCondition.class)
 @EnableConfigurationProperties(JobPlusManagerProperties.class)
 @Slf4j
 public class JobPlusManagerAutoConfiguration implements InitializingBean, DisposableBean {
