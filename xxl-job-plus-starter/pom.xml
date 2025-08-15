@@ -7,7 +7,7 @@
         <version>2.5.1</version>
     </parent>
 
-    <artifactId>xxl-job-plus-admin</artifactId>
+    <artifactId>xxl-job-plus-starter</artifactId>
     <packaging>jar</packaging>
 
     <name>xxl-job-plus-admin</name>

@@ -11,7 +11,7 @@
     </description>
     <modules>
         <module>xxl-job-plus-core</module>
-        <module>xxl-job-plus-admin</module>
+        <module>xxl-job-plus-starter</module>
     </modules>
 
     <properties>
