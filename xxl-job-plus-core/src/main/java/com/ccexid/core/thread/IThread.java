@@ -5,6 +5,8 @@ package com.ccexid.core.thread;
  * 定义了线程的基本操作接口，包括启动和停止线程的功能
  */
 public interface IThread {
+
+    void start();
     /**
      * 停止线程
      * 该方法用于通知线程停止执行

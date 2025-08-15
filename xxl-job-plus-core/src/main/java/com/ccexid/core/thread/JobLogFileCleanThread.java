@@ -22,6 +22,7 @@ public class JobLogFileCleanThread implements IThread {
 
     private static final String DATE_FORMAT_PATTERN = "yyyy-MM-dd";
     private static final long ONE_DAY_MILLISECONDS = 24 * 60 * 60 * 1000L;
+    private long logRetentionDays;
 
     /**
      * 获取单例实例
@@ -46,7 +47,14 @@ public class JobLogFileCleanThread implements IThread {
         if (logRetentionDays < 3) {
             return;
         }
+        this.logRetentionDays = logRetentionDays;
+        start();
 
+    }
+
+
+    @Override
+    public void start() {
         localThread = new Thread(() -> {
             while (!toStop) {
                 try {
@@ -80,7 +88,7 @@ public class JobLogFileCleanThread implements IThread {
                             }
 
                             // 判断是否超过保留天数，若超过则删除该目录
-                            if ((todayDate.getTime() - logFileCreateDate.getTime()) >= logRetentionDays * ONE_DAY_MILLISECONDS) {
+                            if ((todayDate.getTime() - logFileCreateDate.getTime()) >= this.logRetentionDays * ONE_DAY_MILLISECONDS) {
                                 if (!FileUtil.deleteRecursively(childFile)) {
                                     log.warn("Delete log file failed: {}", childFile.getAbsolutePath());
                                 }
@@ -114,7 +122,6 @@ public class JobLogFileCleanThread implements IThread {
         localThread.setName("xxl-job, executor JobLogFileCleanThread");
         localThread.start();
     }
-
 
     /**
      * 停止当前线程运行

@@ -29,6 +29,8 @@ public class ExecutorRegistryThread implements IThread {
 
     private Thread registryThread;
     private volatile boolean toStop = false;
+    private String appName;
+    private String address;
 
     /**
      * 启动执行器注册线程
@@ -43,12 +45,17 @@ public class ExecutorRegistryThread implements IThread {
             log.warn(">>>>>>>>>>> xxl-job, executor registry config fail, appName is null.");
             return;
         }
+        this.appName = appName;
+        this.address = address;
+    }
+
+    @Override
+    public void start() {
         List<AdminBiz> adminBizList = JobExecutor.getAdminBizList();
         if (adminBizList == null || adminBizList.isEmpty()) {
             log.warn(">>>>>>>>>>> xxl-job, executor registry config fail, adminBizList is null or empty.");
             return;
         }
-
         registryThread = new Thread(() -> {
             // 注册执行器
             while (!toStop) {
