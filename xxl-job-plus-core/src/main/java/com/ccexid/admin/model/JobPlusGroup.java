@@ -1,5 +1,6 @@
 package com.ccexid.admin.model;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
@@ -14,6 +15,7 @@ import java.util.List;
  * @author xuxueli 2016-10-20 20:20:55
  */
 @Data
+@TableName("xxl_job_group")
 public class JobPlusGroup {
 
     private Integer id;

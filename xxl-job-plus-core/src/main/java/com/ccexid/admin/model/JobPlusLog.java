@@ -1,5 +1,6 @@
 package com.ccexid.admin.model;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.util.Date;
@@ -9,6 +10,7 @@ import java.util.Date;
  * 包含任务的基本信息、执行信息、触发信息、处理信息和告警状态等
  */
 @Data
+@TableName("xxl_job_log")
 public class JobPlusLog {
 
     /**

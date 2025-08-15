@@ -1,5 +1,6 @@
 package com.ccexid.admin.model;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.util.Date;
@@ -12,6 +13,7 @@ import java.util.Date;
  * @date 2023-XX-XX
  */
 @Data
+@TableName("xxl_job_log_glue")
 public class JobPlusLogGlue {
     /**
      * 主键ID

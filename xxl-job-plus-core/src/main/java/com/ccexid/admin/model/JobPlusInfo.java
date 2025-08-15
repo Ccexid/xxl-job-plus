@@ -1,5 +1,6 @@
 package com.ccexid.admin.model;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.util.Date;
@@ -10,6 +11,7 @@ import java.util.Date;
  * @author ccexid
  */
 @Data
+@TableName("xxl_job_info")
 public class JobPlusInfo {
 
     /**

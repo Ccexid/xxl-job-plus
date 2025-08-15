@@ -1,5 +1,6 @@
 package com.ccexid.admin.model;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.util.Date;
@@ -9,6 +10,7 @@ import java.util.Date;
  * 该类存储了作业调度系统中的注册信息，包括注册组、注册键、注册值以及更新时间
  */
 @Data
+@TableName("xxl_job_registry")
 public class JobPlusRegistry {
     /**
      * 注册表记录的唯一标识符
