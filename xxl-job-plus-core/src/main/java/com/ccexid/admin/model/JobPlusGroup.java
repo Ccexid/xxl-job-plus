@@ -1,5 +1,8 @@
 package com.ccexid.admin.model;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
@@ -17,9 +20,15 @@ import java.util.List;
 @Data
 @TableName("xxl_job_group")
 public class JobPlusGroup {
-
+    @TableId(type = IdType.AUTO)
     private Integer id;
+    /**
+     * 执行器名称
+     */
     private String appName;
+    /**
+     * 执行器名称
+     */
     private String title;
     /**
      * 执行器地址类型：0=自动注册、1=手动录入
@@ -31,6 +40,7 @@ public class JobPlusGroup {
     private String addressList;
     private Date updateTime;
 
+    @TableField(exist = false)
     private List<String> registryList;  // 缓存执行器地址列表
 
     /**

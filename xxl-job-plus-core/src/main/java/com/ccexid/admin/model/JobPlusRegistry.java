@@ -1,5 +1,7 @@
 package com.ccexid.admin.model;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
@@ -15,6 +17,7 @@ public class JobPlusRegistry {
     /**
      * 注册表记录的唯一标识符
      */
+    @TableId(type = IdType.AUTO)
     private Integer id;
 
     /**

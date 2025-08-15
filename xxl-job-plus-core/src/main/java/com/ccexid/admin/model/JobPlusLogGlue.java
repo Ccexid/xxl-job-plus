@@ -1,5 +1,7 @@
 package com.ccexid.admin.model;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
@@ -18,6 +20,7 @@ public class JobPlusLogGlue {
     /**
      * 主键ID
      */
+    @TableId(type = IdType.AUTO)
     private Integer id;
     
     /**
