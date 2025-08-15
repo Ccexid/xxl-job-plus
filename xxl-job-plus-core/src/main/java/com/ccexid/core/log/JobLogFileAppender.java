@@ -52,29 +52,23 @@ public class JobLogFileAppender {
      * @param logPath 指定的日志路径，如果为null或空字符串则使用默认路径
      */
     public static void initLogPath(String logPath) {
-        synchronized (JobLogFileAppender.class) {
-            // init
-            if (StringUtils.isNotBlank(logPath)) {
-                logBasePath = logPath;
-            }
-            // mk base dir
-            File logPathDir = new File(logBasePath);
-            if (!logPathDir.exists()) {
-                if (!logPathDir.mkdirs()) {
-                    log.error("创建日志基础目录失败: {}", logBasePath);
-                }
-            }
-            logBasePath = logPathDir.getPath();
-
-            // mk glue dir
-            File glueBaseDir = new File(logPathDir, GLUE_DIR_NAME);
-            if (!glueBaseDir.exists()) {
-                if (!glueBaseDir.mkdirs()) {
-                    log.error("创建Glue源码目录失败: {}", glueBaseDir.getPath());
-                }
-            }
-            glueSrcPath = glueBaseDir.getPath();
+        // init
+        if (StringUtils.isBlank(logPath)) {
+            logBasePath = logPath;
         }
+        // mk base dir
+        File logPathDir = new File(logBasePath);
+        if (!logPathDir.exists()) {
+            logPathDir.mkdirs();
+        }
+        logBasePath = logPathDir.getPath();
+
+        // mk glue dir
+        File glueBaseDir = new File(logPathDir, GLUE_DIR_NAME);
+        if (!glueBaseDir.exists()) {
+            glueBaseDir.mkdirs();
+        }
+        glueSrcPath = glueBaseDir.getPath();
     }
 
     /**
