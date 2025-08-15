@@ -1,6 +1,6 @@
-package com.ccexid.admin.cron;
+package com.ccexid.core.cron;
 
-import com.ccexid.admin.model.ValueSet;
+import com.ccexid.core.model.ValueSet;
 
 import java.io.Serializable;
 import java.text.ParseException;
@@ -713,7 +713,7 @@ public final class CronExpression implements Serializable, Cloneable {
         return buf.toString();
     }
 
-    protected String getExpressionSetSummary(java.util.Set<Integer> set) {
+    protected String getExpressionSetSummary(Set<Integer> set) {
 
         if (set.contains(NO_SPEC)) {
             return "?";
@@ -739,7 +739,7 @@ public final class CronExpression implements Serializable, Cloneable {
         return buf.toString();
     }
 
-    protected String getExpressionSetSummary(java.util.ArrayList<Integer> list) {
+    protected String getExpressionSetSummary(ArrayList<Integer> list) {
 
         if (list.contains(NO_SPEC)) {
             return "?";
@@ -1000,7 +1000,7 @@ public final class CronExpression implements Serializable, Cloneable {
     public Date getTimeAfter(Date afterTime) {
 
         // Computation is based on Gregorian year only.
-        Calendar cl = new java.util.GregorianCalendar(getTimeZone());
+        Calendar cl = new GregorianCalendar(getTimeZone());
 
         // move ahead one second, since we're computing the time *after* the
         // given time
